@@ -570,12 +570,53 @@ def search(query, limit, details):
 
 
 @main.command()
-@click.argument("font_name")
+@click.argument("font_names", nargs=-1)
+@click.option(
+    "--file",
+    "names_file",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to file with font names (one per line)",
+)
 @click.option("--output", default="fonts", help="Output directory: fonts or web")
 @click.option("--force", is_flag=True, help="Reinstall even if font already exists")
-def download(font_name, output, force):
-    """Download and install a Google Webfont to assets/fonts/."""
-    _download_full_family(font_name, force)
+def download(font_names, names_file, output, force):
+    """Download and install Google Webfonts to assets/fonts/.
+
+    Accepts multiple FONT_NAMES or --file to read names (one per line).
+    """
+    names: list[str] = []
+    if font_names:
+        names.extend(list(font_names))
+    if names_file:
+        try:
+            with open(names_file, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        names.append(line)
+        except OSError as e:
+            click.echo(f"❌ Failed to read names file: {e}")
+            return
+
+    # Default to help if no names provided
+    if not names:
+        click.echo("❌ No font names provided. Pass one or more names, or use --file.")
+        ctx = click.get_current_context()
+        click.echo(ctx.get_help())
+        return
+
+    # Deduplicate while preserving order
+    seen = set()
+    unique_names = []
+    for n in names:
+        low = n.lower()
+        if low not in seen:
+            seen.add(low)
+            unique_names.append(n)
+
+    for n in unique_names:
+        click.echo(f"\n🔤 Processing '{n}'...")
+        _download_full_family(n, force)
     return
 
 

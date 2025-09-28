@@ -15,16 +15,23 @@ pip install -e .
 python -m fontdownloader.cli search "Roboto"
 ```
 
-### Download one family (consolidated)
+### Download one or more families (consolidated)
 ```bash
+# Single
 python -m fontdownloader.cli download "Roboto" --force
+
+# Multiple
+python -m fontdownloader.cli download "Inter" "Roboto" "Lora"
+
+# From file (one name per line)
+python -m fontdownloader.cli download --file fonts.txt
 ```
 - Downloads TTF/OTF/TTC + OFL.txt (ZIP first, repo fallback)
 - Adds all WOFF/WOFF2 weights (100–900, normal/italic) via CSS2
-- Writes SCSS to `assets/scss/Roboto.scss`
-- Outputs files under `assets/fonts/Roboto/`
+- Writes SCSS to `assets/scss/<Family>.scss`
+- Outputs files under `assets/fonts/<Family>/`
 
-### Download many families
+### Download many families (legacy)
 ```bash
 python -m fontdownloader.cli download-all --limit 100
 ```
