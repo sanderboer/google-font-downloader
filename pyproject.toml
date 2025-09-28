@@ -16,6 +16,12 @@ dependencies = [
   "beautifulsoup4",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "pytest",
+]
+
 [project.scripts]
 fontdownloader = "fontdownloader.cli:main"
 
