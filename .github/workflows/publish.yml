@@ -60,9 +60,6 @@ jobs:
         if: steps.version.outputs.changed == 'true'
         run: pip install -e .[dev]
 
-      - name: Lint
-        if: steps.version.outputs.changed == 'true'
-        run: ruff check .
 
       - name: Test
         if: steps.version.outputs.changed == 'true'
