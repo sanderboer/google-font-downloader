@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+setup.py
+fontdownloader/__init__.py
+fontdownloader/cli.py
+fontdownloader.egg-info/PKG-INFO
+fontdownloader.egg-info/SOURCES.txt
+fontdownloader.egg-info/dependency_links.txt
+fontdownloader.egg-info/entry_points.txt
+fontdownloader.egg-info/requires.txt
+fontdownloader.egg-info/top_level.txt
+tests/__init__.py
+tests/test_cli.py
