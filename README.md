@@ -4,42 +4,42 @@ A CLI to find and download Google Fonts. It consolidates TTF/OTF/TTC from the fa
 
 ## Installation
 
+From PyPI (recommended):
 ```bash
-pip install -e .
+pip install fontdownloader
+```
+
+From source (development):
+```bash
+pip install -e .[dev]
 ```
 
 ## Commands
 
 ### Search
 ```bash
-python -m fontdownloader.cli search "Roboto"
+fontdownloader search "Roboto"
 ```
 
 ### Download one or more families (consolidated)
 ```bash
 # Single
-python -m fontdownloader.cli download "Roboto" --force
+fontdownloader download "Roboto" --force
 
 # Multiple
-python -m fontdownloader.cli download "Inter" "Roboto" "Lora"
+fontdownloader download "Inter" "Roboto" "Lora"
 
 # From file (one name per line)
-python -m fontdownloader.cli download --file fonts.txt
+fontdownloader download --file fonts.txt
 ```
 - Downloads TTF/OTF/TTC + OFL.txt (ZIP first, repo fallback)
 - Adds all WOFF/WOFF2 weights (100–900, normal/italic) via CSS2
 - Writes SCSS to `assets/scss/<Family>.scss`
 - Outputs files under `assets/fonts/<Family>/`
 
-### Download many families (legacy)
-```bash
-python -m fontdownloader.cli download-all --limit 100
-```
-- Uses the same consolidated flow per family
-
 ### Generate SCSS only
 ```bash
-python -m fontdownloader.cli generate-scss "Roboto"
+fontdownloader generate-scss "Roboto"
 ```
 - Regenerates `assets/scss/Roboto.scss` based on current files in `assets/fonts/Roboto/`
 
@@ -49,5 +49,5 @@ python -m fontdownloader.cli generate-scss "Roboto"
 
 ## Notes
 - No API key required. If the ZIP is blocked, the tool falls back to the google/fonts GitHub repo for TTF/OTF/TTC.
-- Optional: set a `GITHUB_TOKEN` in your environment to raise GitHub API rate limits.
+- Optional: set a `GITHUB_TOKEN` environment variable to raise GitHub API rate limits.
 - The `assets/` directory is ignored by git by default.
