@@ -1,6 +1,6 @@
 # Font Downloader
 
-A CLI tool to search and download Google Webfonts, unpack them into your project's assets directory, and generate SCSS snippets for easy inclusion.
+A CLI to find and download Google Fonts. It consolidates TTF/OTF/TTC from the family ZIP or the google/fonts repo, adds all available WOFF/WOFF2 weights via the CSS2 API, writes OFL.txt, and generates an SCSS snippet.
 
 ## Installation
 
@@ -8,40 +8,39 @@ A CLI tool to search and download Google Webfonts, unpack them into your project
 pip install -e .
 ```
 
-## Usage
+## Commands
 
-### Search for Fonts
-
+### Search
 ```bash
-fontdownloader search "Roboto"
+python -m fontdownloader.cli search "Roboto"
 ```
 
-### Download a Font
-
+### Download one family (consolidated)
 ```bash
-fontdownloader download "Roboto" --output fonts
+python -m fontdownloader.cli download "Roboto" --force
 ```
+- Downloads TTF/OTF/TTC + OFL.txt (ZIP first, repo fallback)
+- Adds all WOFF/WOFF2 weights (100–900, normal/italic) via CSS2
+- Writes SCSS to `assets/scss/Roboto.scss`
+- Outputs files under `assets/fonts/Roboto/`
 
-Options:
-- `--output`: Specify 'fonts' or 'web' (default: fonts)
-
-### Generate SCSS Snippet
-
+### Download many families
 ```bash
-fontdownloader generate-scss "Roboto"
+python -m fontdownloader.cli download-all --limit 100
 ```
+- Uses the same consolidated flow per family
 
-This creates a SCSS file in `assets/scss/` with @font-face declarations.
+### Generate SCSS only
+```bash
+python -m fontdownloader.cli generate-scss "Roboto"
+```
+- Regenerates `assets/scss/Roboto.scss` based on current files in `assets/fonts/Roboto/`
 
-## Directory Structure
-
-After running the commands, your project should have:
-- `assets/fonts/`: Downloaded font files
-- `assets/scss/`: Generated SCSS snippets
-- License files renamed to `{font_name}_license.txt`
+## Output
+- `assets/fonts/<Family>/`: TTF/OTF/TTC and WOFF/WOFF2 files, plus `OFL.txt`
+- `assets/scss/<Family>.scss`: @font-face rules for downloaded variants
 
 ## Notes
-
-- The download functionality may require a Google Fonts API key for full functionality.
-- Font files are unpacked without subdirectories for TTF, OTF, and TTC formats.
-- License files are renamed to reflect the font name.
+- No API key required. If the ZIP is blocked, the tool falls back to the google/fonts GitHub repo for TTF/OTF/TTC.
+- Optional: set a `GITHUB_TOKEN` in your environment to raise GitHub API rate limits.
+- The `assets/` directory is ignored by git by default.
