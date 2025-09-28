@@ -24,7 +24,6 @@ fontdownloader download "Roboto" --output fonts
 
 Options:
 - `--output`: Specify 'fonts' or 'web' (default: fonts)
-- `--variants`: Specify font variants (e.g., regular,italic,bold)
 
 ### Generate SCSS Snippet
 
