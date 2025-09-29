@@ -1,0 +1,153 @@
+{
+  "items": [
+    {
+      "family": "42dotsans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abeezee",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abel",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abhayalibre",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aboreto",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aclonica",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "arimo",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "calligraffitti",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "cherrycreamsoda",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "chewy",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntu",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntucondensed",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntumono",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntusans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntusansmono",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    }
+  ],
+  "meta": {
+    "generated": "2025-09-29T17:27:33.930549",
+    "generator": "GoogleFontsCatalogBuilder/1.0",
+    "source": "google/fonts@main",
+    "total_families": 15,
+    "total_variants": 30,
+    "license_types": 3,
+    "generation_time_seconds": 15.31,
+    "api_calls": {
+      "github": 18,
+      "css2": 60,
+      "metadata": 15
+    }
+  }
+}

@@ -110,7 +110,7 @@ def _download_from_gfonts_repo(
 
 
 def _get_google_fonts_api_data() -> dict:
-    """Fetch Google Fonts API data. Returns cached data or fetches from API."""
+    """Fetch Google Fonts data. Tries GitHub release catalog first, then API."""
     cache_dir = pathlib.Path.home() / ".fontdownloader" / "cache"
     cache_file = cache_dir / "google_fonts.json"
 
@@ -123,9 +123,39 @@ def _get_google_fonts_api_data() -> dict:
             except (json.JSONDecodeError, OSError):
                 pass
 
-    # Fetch from Google Fonts API
+    # Try to get latest catalog from GitHub releases first
+    try:
+        from . import download_catalog
+
+        catalog_temp = cache_dir / "temp_catalog.json"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Try current repository first, fallback to default
+        repo_name = "sanderboer/google-font-downloader"
+        if download_catalog.download_latest_catalog(
+            repo=repo_name, output_path=str(catalog_temp)
+        ):
+            # Convert catalog format to API format for compatibility
+            with open(catalog_temp, "r", encoding="utf-8") as f:
+                catalog_data = json.load(f)
+
+            # Transform catalog to API format
+            api_data = {"items": catalog_data.get("items", [])}
+
+            # Cache the result
+            cache_file.write_text(json.dumps(api_data, indent=2), encoding="utf-8")
+            catalog_temp.unlink(missing_ok=True)  # Clean up temp file
+
+            click.echo("✅ Using latest catalog from GitHub releases", err=True)
+            return api_data
+
+    except Exception as e:
+        click.echo(f"⚠️  Failed to fetch catalog from releases: {e}", err=True)
+
+    # Fallback to Google Fonts API
     api_url = "https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity"
     try:
+        click.echo("📡 Falling back to Google Fonts API...", err=True)
         with urllib.request.urlopen(api_url, timeout=10) as response:
             data = json.loads(response.read().decode("utf-8"))
 
@@ -138,7 +168,21 @@ def _get_google_fonts_api_data() -> dict:
         click.echo(f"⚠️  Failed to fetch Google Fonts data: {e}", err=True)
         click.echo("Using offline fallback list...", err=True)
 
-        # Fallback list of popular fonts with updated URLs (using CSS API derived)
+        # Try bundled catalog as fallback
+        try:
+            bundled_catalog = (
+                pathlib.Path(__file__).parent / "google_fonts_catalog.json"
+            )
+            if bundled_catalog.exists():
+                click.echo("📦 Using bundled catalog as fallback...", err=True)
+                with open(bundled_catalog, "r", encoding="utf-8") as f:
+                    catalog_data = json.load(f)
+                return {"items": catalog_data.get("items", [])}
+        except Exception as fallback_error:
+            click.echo(f"⚠️  Failed to load bundled catalog: {fallback_error}", err=True)
+
+        # Final fallback list of popular fonts with updated URLs (using CSS API derived)
+        click.echo("🔧 Using minimal fallback font list...", err=True)
         return {
             "items": [
                 {
@@ -679,6 +723,61 @@ def generate_scss(font_name):
     with open(scss_file, "w") as f:
         f.write(scss_content)
     click.echo(f"Generated SCSS snippet at {scss_file}")
+
+
+@main.command()
+@click.option(
+    "--repo",
+    default="sanderboer/google-font-downloader",
+    help="GitHub repository for catalog releases",
+)
+@click.option("--force", is_flag=True, help="Force update even if cache is fresh")
+def update_catalog(repo, force):
+    """Update local font catalog from GitHub releases."""
+    cache_dir = pathlib.Path.home() / ".fontdownloader" / "cache"
+    cache_file = cache_dir / "google_fonts.json"
+
+    if not force and cache_file.exists():
+        cache_age = time.time() - cache_file.stat().st_mtime
+        if cache_age < 3600:  # 1 hour
+            click.echo(
+                f"✅ Catalog cache is fresh (updated {cache_age / 60:.1f} minutes ago)"
+            )
+            return
+
+    click.echo(f"📡 Updating catalog from GitHub releases ({repo})...")
+
+    try:
+        from . import download_catalog
+
+        temp_file = cache_dir / "temp_catalog.json"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        if download_catalog.download_latest_catalog(
+            repo=repo, output_path=str(temp_file)
+        ):
+            # Validate and transform catalog
+            with open(temp_file, "r", encoding="utf-8") as f:
+                catalog_data = json.load(f)
+
+            families = len(catalog_data.get("items", []))
+            if families < 10:  # Basic validation
+                raise ValueError(f"Catalog seems incomplete: only {families} families")
+
+            # Transform to API format and cache
+            api_data = {"items": catalog_data.get("items", [])}
+            cache_file.write_text(json.dumps(api_data, indent=2), encoding="utf-8")
+            temp_file.unlink(missing_ok=True)
+
+            click.echo(f"✅ Catalog updated: {families} font families available")
+        else:
+            raise RuntimeError("Failed to download catalog from releases")
+
+    except Exception as e:
+        click.echo(f"❌ Failed to update catalog: {e}", err=True)
+        click.echo(
+            "💡 The CLI will fall back to Google Fonts API when needed", err=True
+        )
 
 
 @main.command()
