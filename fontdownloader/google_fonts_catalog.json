@@ -1,0 +1,936 @@
+{
+  "items": [
+    {
+      "family": "42dotsans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abeezee",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abel",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abhayalibre",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aboreto",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abrilfatface",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "abyssinicasil",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "acme",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "actor",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "adamina",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "adlamdisplay",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "adobeblank",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "adventpro",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "afacad",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "afacadflux",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "agbalumo",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "agdasima",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aguafinascript",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "agudisplay",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "akatab",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "akayakanadaka",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "akayatelivigala",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "akronim",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "Aksarabaligalang",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "akshar",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aladin",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alansans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alata",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alatsi",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "albertsans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aldrich",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alef",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alegreya",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alegreyasans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alegreyasanssc",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alegreyasc",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aleo",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alexandria",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alexbrush",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alfaslabone",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alice",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alike",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alikeangular",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alkalami",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "alkatra",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "allan",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "allerta",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "allertastencil",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "allison",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "allura",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "aclonica",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "arimo",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "calligraffitti",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "cherrycreamsoda",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "chewy",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "comingsoon",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "cousine",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "craftygirls",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "creepstercaps",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "crushed",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "fontdinerswanky",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "homemadeapple",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "irishgrover",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmbx10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmex10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmmi10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmr10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmsy10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "jsmathcmti10",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "justanotherhand",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "kosugi",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "kosugimaru",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "kranky",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "luckiestguy",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "maidenorange",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "montez",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "mountainsofchristmas",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "Opensanshebrew",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "Opensanshebrewcondensed",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "permanentmarker",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "rancho",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "redressed",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "robotoslab",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "rochester",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "rocksalt",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "satisfy",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "schoolbell",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "slackey",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "smokum",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "specialelite",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "sunshiney",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "syncopate",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "tinos",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ultra",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "unkempt",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "walterturncoat",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "yellowtail",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntu",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntucondensed",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntumono",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntusans",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    },
+    {
+      "family": "ubuntusansmono",
+      "variants": [
+        "regular",
+        "700"
+      ],
+      "category": "sans-serif",
+      "files": {}
+    }
+  ],
+  "meta": {
+    "generated": "2025-09-29T16:36:03.909943",
+    "generator": "GoogleFontsCatalogBuilder/1.0",
+    "source": "google/fonts@main",
+    "total_families": 102,
+    "total_variants": 204,
+    "license_types": 3,
+    "generation_time_seconds": 103.79,
+    "api_calls": {
+      "github": 105,
+      "css2": 408,
+      "metadata": 102
+    }
+  }
+}
