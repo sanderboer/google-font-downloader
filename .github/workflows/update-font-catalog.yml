@@ -66,14 +66,35 @@ jobs:
           # Generate catalog
           python catalog_builder.py $ARGS --output ../fontdownloader/google_fonts_catalog.json
           
-          # Generate summary
+          # Generate summary (error-resistant)
           echo "## Catalog Generation Summary" > catalog_summary.md
           echo "" >> catalog_summary.md
           
           if [ -f ../fontdownloader/google_fonts_catalog.json ]; then
-            FAMILIES=$(python -c "import json; data=json.load(open('../fontdownloader/google_fonts_catalog.json')); print(len(data['items']))")
-            VARIANTS=$(python -c "import json; data=json.load(open('../fontdownloader/google_fonts_catalog.json')); print(sum(len(item['variants']) for item in data['items']))")
-            FILESIZE=$(du -h ../fontdownloader/google_fonts_catalog.json | cut -f1)
+            # Get counts with error handling
+            FAMILIES=$(python3 - <<'PY'
+import json
+try:
+    with open('../fontdownloader/google_fonts_catalog.json') as f:
+        data = json.load(f)
+    print(len(data.get('items', [])))
+except Exception:
+    print(0)
+PY
+)
+            
+            VARIANTS=$(python3 - <<'PY'
+import json
+try:
+    with open('../fontdownloader/google_fonts_catalog.json') as f:
+        data = json.load(f)
+    print(sum(len(item.get('variants', [])) for item in data.get('items', [])))
+except Exception:
+    print(0)
+PY
+)
+            
+            FILESIZE=$(du -h ../fontdownloader/google_fonts_catalog.json 2>/dev/null | cut -f1 || echo "unknown")
             
             echo "- **Total Families**: $FAMILIES" >> catalog_summary.md
             echo "- **Total Variants**: $VARIANTS" >> catalog_summary.md
@@ -81,17 +102,21 @@ jobs:
             echo "- **Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> catalog_summary.md
             echo "" >> catalog_summary.md
             
-            # Show top 10 fonts as sample
+            # Show top 10 fonts as sample (error-resistant)
             echo "### Sample Fonts (First 10)" >> catalog_summary.md
-            python3 -c "
-            import json
-            data = json.load(open('../fontdownloader/google_fonts_catalog.json'))
-            for i, item in enumerate(data['items'][:10], 1):
-                family = item['family']
-                category = item['category']
-                variants = len(item['variants'])
-                print(f'{i}. **{family}** ({category}) - {variants} variants')
-            " >> catalog_summary.md
+            python3 - <<'PY' >> catalog_summary.md
+import json
+try:
+    with open('../fontdownloader/google_fonts_catalog.json') as f:
+        data = json.load(f)
+    for i, item in enumerate(data.get('items', [])[:10], 1):
+        family = item.get('family', 'Unknown')
+        category = item.get('category', 'unknown')
+        variants = len(item.get('variants', []))
+        print(f'{i}. **{family}** ({category}) - {variants} variants')
+except Exception as e:
+    print(f"Error displaying sample fonts: {e}")
+PY
           else
             echo "❌ Catalog generation failed" >> catalog_summary.md
           fi
@@ -99,6 +124,9 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
+          # Ensure git diff can see untracked files
+          git add -N fontdownloader/google_fonts_catalog.json 2>/dev/null || true
+          
           # Check if catalog file changed
           if git diff --quiet HEAD -- fontdownloader/google_fonts_catalog.json; then
             echo "No changes detected in catalog"
@@ -107,17 +135,19 @@ jobs:
             echo "Changes detected in catalog"
             echo "has_changes=true" >> $GITHUB_OUTPUT
             
-            # Get diff stats
-            ADDED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json | cut -f1)
-            REMOVED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json | cut -f2)
+            # Get diff stats (handle case where file is new)
+            ADDED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json 2>/dev/null | cut -f1 || echo "new")
+            REMOVED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json 2>/dev/null | cut -f2 || echo "0")
             echo "lines_added=$ADDED" >> $GITHUB_OUTPUT
             echo "lines_removed=$REMOVED" >> $GITHUB_OUTPUT
           fi
       
       - name: Validate catalog
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        env:
+          MIN_FAMILIES: ${{ github.event.inputs.max_fonts && '10' || '100' }}
         run: |
-          # Basic validation
+          # Basic validation with adjustable thresholds
           python3 .github/scripts/validate_catalog.py
       
       - name: Create Pull Request
@@ -197,8 +227,8 @@ jobs:
             
             # Update README if markers exist
             if grep -q "FONT_STATS_START" README.md; then
-              # Replace existing stats
-              sed -i '/<!-- FONT_STATS_START -->/,/<!-- FONT_STATS_END -->/c\\' README.md
+              # Replace existing stats block safely
+              sed -i '/<!-- FONT_STATS_START -->/,/<!-- FONT_STATS_END -->/d' README.md
               cat temp_stats.md >> README.md
             fi
             

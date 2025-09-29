@@ -107,11 +107,65 @@ class GoogleFontsCatalogBuilder:
         return session
 
     def get_font_directories(self, license_type: str) -> List[str]:
-        """Get all font directories for a license type"""
+        """Get all font directories for a license type using Git Trees API"""
+        self.github_limiter.wait()
+
+        # Try Git Trees API first (more reliable for large directories)
+        try:
+            url = "https://api.github.com/repos/google/fonts/git/trees/main?recursive=1"
+            self.logger.debug(
+                f"Fetching directories for {license_type} via Git Trees API"
+            )
+
+            response = self.session.get(url, timeout=60)
+            self.stats["api_calls"]["github"] += 1
+
+            if response.status_code == 200:
+                tree = response.json().get("tree", [])
+                prefix = f"{license_type}/"
+                directories = set()
+
+                # Extract font slugs from paths like "ofl/fontname" or "ofl/fontname/..."
+                for node in tree:
+                    path = node.get("path", "")
+                    if not path.startswith(prefix):
+                        continue
+
+                    parts = path.split("/")
+                    if (
+                        len(parts) >= 2
+                        and parts[0] == license_type
+                        and node.get("type") == "tree"
+                    ):
+                        directories.add(parts[1])
+
+                directories = sorted(list(directories))
+                self.logger.info(
+                    f"Found {len(directories)} {license_type} font families via Git Trees"
+                )
+                return directories
+
+            else:
+                self.logger.warning(
+                    f"Git Trees API error for {license_type}: {response.status_code}, trying fallback"
+                )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Git Trees API failed for {license_type}: {e}, trying fallback"
+            )
+
+        # Fallback to Contents API
+        return self._get_font_directories_fallback(license_type)
+
+    def _get_font_directories_fallback(self, license_type: str) -> List[str]:
+        """Fallback method using Contents API"""
         self.github_limiter.wait()
 
         url = f"https://api.github.com/repos/google/fonts/contents/{license_type}"
-        self.logger.debug(f"Fetching directories for {license_type}")
+        self.logger.debug(
+            f"Fetching directories for {license_type} via Contents API (fallback)"
+        )
 
         try:
             response = self.session.get(url, timeout=30)
@@ -121,17 +175,19 @@ class GoogleFontsCatalogBuilder:
                 data = response.json()
                 directories = [item["name"] for item in data if item["type"] == "dir"]
                 self.logger.info(
-                    f"Found {len(directories)} {license_type} font families"
+                    f"Found {len(directories)} {license_type} font families via Contents API"
                 )
                 return directories
             else:
                 self.logger.error(
-                    f"GitHub API error for {license_type}: {response.status_code}"
+                    f"Contents API error for {license_type}: {response.status_code}"
                 )
                 return []
 
         except Exception as e:
-            self.logger.error(f"Failed to fetch {license_type} directories: {e}")
+            self.logger.error(
+                f"Failed to fetch {license_type} directories via Contents API: {e}"
+            )
             return []
 
     def parse_metadata_pb(self, license_type: str, font_slug: str) -> Dict:
@@ -473,17 +529,20 @@ class GoogleFontsCatalogBuilder:
         self.logger.info("📊 GENERATION COMPLETE")
         self.logger.info(f"   Total families: {len(catalog['families'])}")
         self.logger.info(f"   Total variants: {catalog['meta']['total_variants']}")
-        success_rate = (100 * self.stats['successful_families'] /
-                        max(self.stats['total_families'], 1))
-        success_count = self.stats['successful_families']
-        total_count = self.stats['total_families']
+        success_rate = (
+            100
+            * self.stats["successful_families"]
+            / max(self.stats["total_families"], 1)
+        )
+        success_count = self.stats["successful_families"]
+        total_count = self.stats["total_families"]
         self.logger.info(
             f"   Success rate: {success_count}/{total_count} ({success_rate:.1f}%)"
         )
         self.logger.info(
             f"   Generation time: {catalog['meta']['generation_time_seconds']}s"
         )
-        api_calls = self.stats['api_calls']
+        api_calls = self.stats["api_calls"]
         self.logger.info(
             f"   API calls: GitHub={api_calls['github']}, "
             f"CSS2={api_calls['css2']}, Metadata={api_calls['metadata']}"
