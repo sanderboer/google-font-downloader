@@ -110,31 +110,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
         run: |
           # Basic validation
-          python -c "
-import json
-import sys
-
-try:
-    with open('fontdownloader/google_fonts_catalog.json') as f:
-        data = json.load(f)
-    
-    # Validate structure
-    assert 'items' in data, 'Missing items key'
-    assert 'meta' in data, 'Missing meta key'
-    assert len(data['items']) > 100, f'Too few families: {len(data[\"items\"])}'
-    
-    # Validate items
-    for item in data['items'][:5]:  # Check first 5
-        assert 'family' in item, 'Missing family key'
-        assert 'variants' in item, 'Missing variants key'
-        assert 'category' in item, 'Missing category key'
-        assert len(item['variants']) > 0, f'No variants for {item[\"family\"]}'
-    
-    print(f'✅ Catalog validation passed: {len(data[\"items\"])} families')
-except Exception as e:
-    print(f'❌ Catalog validation failed: {e}')
-    sys.exit(1)
-"
+          python3 .github/scripts/validate_catalog.py
       
       - name: Create Pull Request
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
