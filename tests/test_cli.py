@@ -41,6 +41,18 @@ def test_download_css2_woff_variants_dedup_and_naming(
     font_name = "Space Font"
     dest_dir = tmp_path / "assets" / "fonts" / font_name
 
+    # Mock catalog data to include our test font
+    def fake_get_catalog():
+        return {
+            "items": [
+                {
+                    "family": "Space Font",
+                    "variants": ["regular", "700italic"],
+                    "category": "sans-serif",
+                }
+            ]
+        }
+
     # Mock variant fetcher with duplicate (style,weight) entries
     def fake_fetch(name: str):
         assert name == font_name
@@ -56,6 +68,7 @@ def test_download_css2_woff_variants_dedup_and_naming(
         dest.write_bytes(b"")
         return True
 
+    monkeypatch.setattr(cli, "_get_google_fonts_api_data", fake_get_catalog)
     monkeypatch.setattr(cli, "_fetch_css2_variants", fake_fetch)
     monkeypatch.setattr(cli, "_download_font_file", fake_dl)
 
