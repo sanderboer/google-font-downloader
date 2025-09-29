@@ -42,12 +42,11 @@ def download_latest_catalog(
         print(f"✅ Catalog downloaded to: {output_path}")
         return True
 
-    except Exception as e:
-        print(f"❌ Failed to download catalog: {e}")
+    except Exception:
+        # Silently fail - the CLI will handle messaging
         return False
 
 
 if __name__ == "__main__":
     success = download_latest_catalog()
     exit(0 if success else 1)
-

@@ -149,82 +149,82 @@ def _get_google_fonts_api_data() -> dict:
             click.echo("✅ Using latest catalog from GitHub releases", err=True)
             return api_data
 
-    except Exception as e:
-        click.echo(f"⚠️  Failed to fetch catalog from releases: {e}", err=True)
+    except Exception:
+        # Silently try Google Fonts API next
+        pass
 
     # Fallback to Google Fonts API
     api_url = "https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity"
     try:
-        click.echo("📡 Falling back to Google Fonts API...", err=True)
         with urllib.request.urlopen(api_url, timeout=10) as response:
             data = json.loads(response.read().decode("utf-8"))
 
         # Cache the result
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        click.echo("✅ Using Google Fonts API data", err=True)
         return data
 
-    except Exception as e:
-        click.echo(f"⚠️  Failed to fetch Google Fonts data: {e}", err=True)
-        click.echo("Using offline fallback list...", err=True)
+    except Exception:
+        # Silently try bundled catalog next
+        pass
 
-        # Try bundled catalog as fallback
-        try:
-            bundled_catalog = (
-                pathlib.Path(__file__).parent / "google_fonts_catalog.json"
-            )
-            if bundled_catalog.exists():
-                click.echo("📦 Using bundled catalog as fallback...", err=True)
-                with open(bundled_catalog, "r", encoding="utf-8") as f:
-                    catalog_data = json.load(f)
-                return {"items": catalog_data.get("items", [])}
-        except Exception as fallback_error:
-            click.echo(f"⚠️  Failed to load bundled catalog: {fallback_error}", err=True)
+    # Try bundled catalog as fallback
+    try:
+        bundled_catalog = pathlib.Path(__file__).parent / "google_fonts_catalog.json"
+        if bundled_catalog.exists():
+            with open(bundled_catalog, "r", encoding="utf-8") as f:
+                catalog_data = json.load(f)
+            click.echo("✅ Using bundled catalog", err=True)
+            return {"items": catalog_data.get("items", [])}
+    except Exception:
+        # Final fallback - show this message since it's the last resort
+        pass
 
-        # Final fallback list of popular fonts with updated URLs (using CSS API derived)
-        click.echo("🔧 Using minimal fallback font list...", err=True)
-        return {
-            "items": [
-                {
-                    "family": "Inter",
-                    "variants": ["regular", "700"],
-                    "files": {
-                        "regular": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
-                        "700": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
-                    },
+    # Final fallback list of popular fonts with updated URLs (using CSS API derived)
+    click.echo("⚠️  All catalog sources failed, using minimal fallback...", err=True)
+    return {
+        "items": [
+            {
+                "family": "Inter",
+                "variants": ["regular", "700"],
+                "files": {
+                    "regular": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+                    "700": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
                 },
-                {
-                    "family": "Roboto",
-                    "variants": ["regular", "700"],
-                    "files": {
-                        "regular": "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2",
-                        "700": "https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4.woff2",
-                    },
+            },
+            {
+                "family": "Roboto",
+                "variants": ["regular", "700"],
+                "files": {
+                    "regular": "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2",
+                    "700": "https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4.woff2",
                 },
-                {
-                    "family": "Open Sans",
-                    "variants": ["regular", "700"],
-                    "files": {
-                        "regular": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
-                        "700": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
-                    },
+            },
+            {
+                "family": "Open Sans",
+                "variants": ["regular", "700"],
+                "files": {
+                    "regular": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+                    "700": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
                 },
-                {
-                    "family": "Lora",
-                    "variants": ["regular"],
-                    "files": {
-                        "regular": "https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuxJBkq0.woff2"
-                    },
+            },
+            {
+                "family": "Lora",
+                "variants": ["regular"],
+                "files": {
+                    "regular": "https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuxJBkq0.woff2"
                 },
-                {
-                    "family": "Playfair Display",
-                    "variants": ["regular"],
-                    "files": {
-                        "regular": "https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtXK-F2qC0s.woff2"
-                    },
+            },
+            {
+                "family": "Playfair Display",
+                "variants": ["regular"],
+                "files": {
+                    "regular": "https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtXK-F2qC0s.woff2"
                 },
-            ]
-        }
+            },
+        ]
+    }
 
 
 def _download_font_file(url: str, dest_path: pathlib.Path) -> bool:
