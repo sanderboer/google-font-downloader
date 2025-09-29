@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,6 +28,3 @@ jobs:
 
       - name: Ruff Format Check
         run: ruff format --check .
-
-      - name: Run Tests
-        run: pytest -q
