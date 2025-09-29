@@ -29,6 +29,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
+      repository-projects: write
     
     steps:
       - name: Checkout repository
@@ -120,10 +122,13 @@ jobs:
           python3 .github/scripts/validate_catalog.py
       
       - name: Create Pull Request
+        id: create-pr
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
         uses: peter-evans/create-pull-request@v5
+        continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT if available, fallback to GITHUB_TOKEN
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: |
             chore: update Google Fonts catalog
             
@@ -146,6 +151,30 @@ jobs:
           
           # Auto-merge if validation passes
           draft: false
+      
+      - name: Direct commit to main (fallback)
+        if: (steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true') && steps.create-pr.outcome == 'failure'
+        run: |
+          echo "⚠️ PR creation failed, committing directly to main branch"
+          
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Add and commit changes
+          git add fontdownloader/google_fonts_catalog.json
+          git commit -m "chore: update Google Fonts catalog
+
+          - Updated font catalog with latest families and variants  
+          - Lines added: ${{ steps.changes.outputs.lines_added }}
+          - Lines removed: ${{ steps.changes.outputs.lines_removed }}
+          - Generated: ${{ github.run_id }}
+          - Auto-committed due to PR creation failure"
+          
+          # Push to main
+          git push origin main
+          
+          echo "✅ Catalog updated via direct commit"
 
       - name: Create GitHub Release
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
