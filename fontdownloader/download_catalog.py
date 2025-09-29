@@ -2,12 +2,14 @@
 """
 Download latest Google Fonts catalog from GitHub Releases
 """
+
 import json
 import urllib.request
-import os
-from pathlib import Path
 
-def download_latest_catalog(repo="sanderboer/google-font-downloader", output_path="google_fonts_catalog.json"):
+
+def download_latest_catalog(
+    repo="sanderboer/google-font-downloader", output_path="google_fonts_catalog.json"
+):
     """Download the latest catalog from GitHub Releases"""
     try:
         # Get latest release info
@@ -44,6 +46,8 @@ def download_latest_catalog(repo="sanderboer/google-font-downloader", output_pat
         print(f"❌ Failed to download catalog: {e}")
         return False
 
+
 if __name__ == "__main__":
     success = download_latest_catalog()
     exit(0 if success else 1)
+

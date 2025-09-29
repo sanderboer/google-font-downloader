@@ -68,7 +68,7 @@ def validate_catalog():
         if "generated" not in meta:
             print("⚠️  Warning: Missing generation timestamp")
 
-        print(f"✅ Catalog validation passed:")
+        print("✅ Catalog validation passed:")
         print(f"   - Families: {len(items)}")
         print(f"   - File size: {file_size:,} bytes")
         if "total_variants" in meta:

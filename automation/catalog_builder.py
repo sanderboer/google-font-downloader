@@ -139,7 +139,7 @@ class GoogleFontsCatalogBuilder:
                     ):
                         directories.add(parts[1])
 
-                directories = sorted(list(directories))
+                directories = sorted(directories)
                 self.logger.info(
                     f"Found {len(directories)} {license_type} font families via Git Trees"
                 )
