@@ -73,26 +73,26 @@ jobs:
           if [ -f ../fontdownloader/google_fonts_catalog.json ]; then
             # Get counts with error handling
             FAMILIES=$(python3 - <<'PY'
-import json
-try:
-    with open('../fontdownloader/google_fonts_catalog.json') as f:
-        data = json.load(f)
-    print(len(data.get('items', [])))
-except Exception:
-    print(0)
-PY
-)
+            import json
+            try:
+                with open('../fontdownloader/google_fonts_catalog.json') as f:
+                    data = json.load(f)
+                print(len(data.get('items', [])))
+            except Exception:
+                print(0)
+            PY
+            )
             
             VARIANTS=$(python3 - <<'PY'
-import json
-try:
-    with open('../fontdownloader/google_fonts_catalog.json') as f:
-        data = json.load(f)
-    print(sum(len(item.get('variants', [])) for item in data.get('items', [])))
-except Exception:
-    print(0)
-PY
-)
+            import json
+            try:
+                with open('../fontdownloader/google_fonts_catalog.json') as f:
+                    data = json.load(f)
+                print(sum(len(item.get('variants', [])) for item in data.get('items', [])))
+            except Exception:
+                print(0)
+            PY
+            )
             
             FILESIZE=$(du -h ../fontdownloader/google_fonts_catalog.json 2>/dev/null | cut -f1 || echo "unknown")
             
@@ -105,18 +105,18 @@ PY
             # Show top 10 fonts as sample (error-resistant)
             echo "### Sample Fonts (First 10)" >> catalog_summary.md
             python3 - <<'PY' >> catalog_summary.md
-import json
-try:
-    with open('../fontdownloader/google_fonts_catalog.json') as f:
-        data = json.load(f)
-    for i, item in enumerate(data.get('items', [])[:10], 1):
-        family = item.get('family', 'Unknown')
-        category = item.get('category', 'unknown')
-        variants = len(item.get('variants', []))
-        print(f'{i}. **{family}** ({category}) - {variants} variants')
-except Exception as e:
-    print(f"Error displaying sample fonts: {e}")
-PY
+            import json
+            try:
+                with open('../fontdownloader/google_fonts_catalog.json') as f:
+                    data = json.load(f)
+                for i, item in enumerate(data.get('items', [])[:10], 1):
+                    family = item.get('family', 'Unknown')
+                    category = item.get('category', 'unknown')
+                    variants = len(item.get('variants', []))
+                    print(f'{i}. **{family}** ({category}) - {variants} variants')
+            except Exception as e:
+                print(f"Error displaying sample fonts: {e}")
+            PY
           else
             echo "❌ Catalog generation failed" >> catalog_summary.md
           fi
