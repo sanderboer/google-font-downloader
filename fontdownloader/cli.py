@@ -22,6 +22,17 @@ def _slugify_google_fonts_dir(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
+def _normalize_font_name_for_lookup(font_name: str) -> str:
+    """Convert font name to catalog lookup format.
+
+    Examples:
+    - "Fauna One" -> "faunaone"
+    - "Open Sans" -> "opensans"
+    - "Roboto Slab" -> "robotoslab"
+    """
+    return re.sub(r"[^a-z0-9]", "", font_name.lower())
+
+
 def _download_from_gfonts_repo(
     font_name: str, dest_dir: pathlib.Path
 ) -> tuple[int, bool]:
@@ -408,8 +419,14 @@ def _download_css2_woff_variants(
     catalog_variants = []
     font_info = None
 
+    normalized_name = _normalize_font_name_for_lookup(font_name)
+
+    # Try exact match first, then normalized match
     for font in fonts_data.get("items", []):
-        if font["family"].lower() == font_name.lower():
+        if (
+            font["family"].lower() == font_name.lower()
+            or font["family"].lower() == normalized_name
+        ):
             font_info = font
             catalog_variants = font.get("variants", [])
             break
@@ -782,10 +799,17 @@ def _download_full_family(font_name: str, force: bool) -> None:
     # Get Google Fonts data and validate family exists (for user feedback)
     fonts_data = _get_google_fonts_api_data()
     font_info = None
+    normalized_name = _normalize_font_name_for_lookup(font_name)
+
+    # Try exact match first, then normalized match
     for font in fonts_data.get("items", []):
-        if font["family"].lower() == font_name.lower():
+        if (
+            font["family"].lower() == font_name.lower()
+            or font["family"].lower() == normalized_name
+        ):
             font_info = font
             break
+
     if not font_info:
         click.echo(f"❌ Font '{font_name}' not found in Google Fonts")
         return
@@ -943,8 +967,14 @@ def generate_scss(font_name):
 
     # Find the font
     font_info = None
+    normalized_name = _normalize_font_name_for_lookup(font_name)
+
+    # Try exact match first, then normalized match
     for font in fonts_data.get("items", []):
-        if font["family"].lower() == font_name.lower():
+        if (
+            font["family"].lower() == font_name.lower()
+            or font["family"].lower() == normalized_name
+        ):
             font_info = font
             break
 
