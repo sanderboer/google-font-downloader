@@ -1,0 +1,215 @@
+name: Update Google Fonts Catalog
+
+on:
+  # Run weekly on Sundays at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      max_fonts:
+        description: 'Limit fonts per license (for testing)'
+        required: false
+        default: ''
+        type: string
+      force_update:
+        description: 'Force update even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+  # Trigger on google/fonts repository changes (webhook)
+  repository_dispatch:
+    types: [google-fonts-updated]
+
+jobs:
+  update-catalog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests urllib3
+          # Install additional dependencies if needed
+          if [ -f automation/requirements.txt ]; then
+            pip install -r automation/requirements.txt
+          fi
+      
+      - name: Generate font catalog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd automation
+          
+          # Build arguments
+          ARGS="--github-token $GITHUB_TOKEN --verbose"
+          if [ -n "${{ github.event.inputs.max_fonts }}" ]; then
+            ARGS="$ARGS --max-fonts ${{ github.event.inputs.max_fonts }}"
+          fi
+          
+          # Generate catalog
+          python catalog_builder.py $ARGS --output ../fontdownloader/google_fonts_catalog.json
+          
+          # Generate summary
+          echo "## Catalog Generation Summary" > catalog_summary.md
+          echo "" >> catalog_summary.md
+          
+          if [ -f ../fontdownloader/google_fonts_catalog.json ]; then
+            FAMILIES=$(python -c "import json; data=json.load(open('../fontdownloader/google_fonts_catalog.json')); print(len(data['items']))")
+            VARIANTS=$(python -c "import json; data=json.load(open('../fontdownloader/google_fonts_catalog.json')); print(sum(len(item['variants']) for item in data['items']))")
+            FILESIZE=$(du -h ../fontdownloader/google_fonts_catalog.json | cut -f1)
+            
+            echo "- **Total Families**: $FAMILIES" >> catalog_summary.md
+            echo "- **Total Variants**: $VARIANTS" >> catalog_summary.md
+            echo "- **File Size**: $FILESIZE" >> catalog_summary.md
+            echo "- **Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> catalog_summary.md
+            echo "" >> catalog_summary.md
+            
+            # Show top 10 fonts as sample
+            echo "### Sample Fonts (First 10)" >> catalog_summary.md
+            python -c "
+import json
+data = json.load(open('../fontdownloader/google_fonts_catalog.json'))
+for i, item in enumerate(data['items'][:10], 1):
+    print(f'{i}. **{item[\"family\"]}** ({item[\"category\"]}) - {len(item[\"variants\"])} variants')
+" >> catalog_summary.md
+          else
+            echo "❌ Catalog generation failed" >> catalog_summary.md
+          fi
+      
+      - name: Check for changes
+        id: changes
+        run: |
+          # Check if catalog file changed
+          if git diff --quiet HEAD -- fontdownloader/google_fonts_catalog.json; then
+            echo "No changes detected in catalog"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in catalog"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            
+            # Get diff stats
+            ADDED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json | cut -f1)
+            REMOVED=$(git diff --numstat HEAD -- fontdownloader/google_fonts_catalog.json | cut -f2)
+            echo "lines_added=$ADDED" >> $GITHUB_OUTPUT
+            echo "lines_removed=$REMOVED" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Validate catalog
+        if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        run: |
+          # Basic validation
+          python -c "
+import json
+import sys
+
+try:
+    with open('fontdownloader/google_fonts_catalog.json') as f:
+        data = json.load(f)
+    
+    # Validate structure
+    assert 'items' in data, 'Missing items key'
+    assert 'meta' in data, 'Missing meta key'
+    assert len(data['items']) > 100, f'Too few families: {len(data[\"items\"])}'
+    
+    # Validate items
+    for item in data['items'][:5]:  # Check first 5
+        assert 'family' in item, 'Missing family key'
+        assert 'variants' in item, 'Missing variants key'
+        assert 'category' in item, 'Missing category key'
+        assert len(item['variants']) > 0, f'No variants for {item[\"family\"]}'
+    
+    print(f'✅ Catalog validation passed: {len(data[\"items\"])} families')
+except Exception as e:
+    print(f'❌ Catalog validation failed: {e}')
+    sys.exit(1)
+"
+      
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update Google Fonts catalog
+            
+            - Updated font catalog with latest families and variants
+            - Lines added: ${{ steps.changes.outputs.lines_added }}
+            - Lines removed: ${{ steps.changes.outputs.lines_removed }}
+            - Generated: ${{ github.run_id }}
+          
+          title: 'chore: update Google Fonts catalog'
+          body-path: automation/catalog_summary.md
+          branch: update-font-catalog-${{ github.run_number }}
+          delete-branch: true
+          
+          # Auto-assign and label
+          assignees: ${{ github.actor }}
+          labels: |
+            automated
+            fonts
+            catalog
+          
+          # Auto-merge if validation passes
+          draft: false
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::Font catalog update failed. Check logs for details."
+          
+          # Could add Slack/Discord notification here
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 Font catalog update failed in ${{ github.repository }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Upload catalog as artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: google-fonts-catalog-${{ github.run_number }}
+          path: |
+            fontdownloader/google_fonts_catalog.json
+            automation/catalog_summary.md
+          retention-days: 30
+      
+      - name: Update README stats
+        if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        run: |
+          # Update README with latest stats
+          if [ -f README.md ] && [ -f fontdownloader/google_fonts_catalog.json ]; then
+            FAMILIES=$(python -c "import json; data=json.load(open('fontdownloader/google_fonts_catalog.json')); print(len(data['items']))")
+            VARIANTS=$(python -c "import json; data=json.load(open('fontdownloader/google_fonts_catalog.json')); print(sum(len(item['variants']) for item in data['items']))")
+            
+            # Create or update badge info
+            echo "<!-- FONT_STATS_START -->" > temp_stats.md
+            echo "[![Fonts](https://img.shields.io/badge/fonts-$FAMILIES-blue)](#)" >> temp_stats.md
+            echo "[![Variants](https://img.shields.io/badge/variants-$VARIANTS-green)](#)" >> temp_stats.md
+            echo "[![Updated](https://img.shields.io/badge/updated-$(date +%Y--%m--%d)-orange)](#)" >> temp_stats.md
+            echo "<!-- FONT_STATS_END -->" >> temp_stats.md
+            
+            # Update README if markers exist
+            if grep -q "FONT_STATS_START" README.md; then
+              # Replace existing stats
+              sed -i '/<!-- FONT_STATS_START -->/,/<!-- FONT_STATS_END -->/c\\' README.md
+              cat temp_stats.md >> README.md
+            fi
+            
+            rm -f temp_stats.md
+          fi
