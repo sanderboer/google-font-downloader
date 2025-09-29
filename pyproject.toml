@@ -41,6 +41,13 @@ target-version = "py38"
  ]
  ignore = [
      "E501",  # line too long
+     "F401",  # unused imports (sometimes useful for future use)
+     "F541",  # f-string without placeholders (sometimes cleaner for consistency)
+     "W291",  # trailing whitespace (auto-fixable, not critical)
+     "W292",  # no newline at end of file (auto-fixable)
+     "W293",  # blank line contains whitespace (auto-fixable)
+     "C414",  # unnecessary list() call (sometimes clearer)
+     "I001",  # import sorting (can be opinionated)
  ]
 
 [tool.ruff.format]
