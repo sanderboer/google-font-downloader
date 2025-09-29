@@ -28,9 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-      issues: write
-      repository-projects: write
     
     steps:
       - name: Checkout repository
@@ -121,68 +118,43 @@ jobs:
           # Basic validation with adjustable thresholds
           python3 .github/scripts/validate_catalog.py
       
-      - name: Create Pull Request
-        id: create-pr
+      - name: Prepare release summary
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
-        uses: peter-evans/create-pull-request@v5
-        continue-on-error: true
-        with:
-          # Use PAT if available, fallback to GITHUB_TOKEN
-          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
-          commit-message: |
-            chore: update Google Fonts catalog
-            
-            - Updated font catalog with latest families and variants
-            - Lines added: ${{ steps.changes.outputs.lines_added }}
-            - Lines removed: ${{ steps.changes.outputs.lines_removed }}
-            - Generated: ${{ github.run_id }}
-          
-          title: 'chore: update Google Fonts catalog'
-          body-path: automation/catalog_summary.md
-          branch: update-font-catalog-${{ github.run_number }}
-          delete-branch: true
-          
-          # Auto-assign and label
-          assignees: ${{ github.actor }}
-          labels: |
-            automated
-            fonts
-            catalog
-          
-          # Auto-merge if validation passes
-          draft: false
-      
-      - name: Direct commit to main (fallback)
-        if: (steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true') && steps.create-pr.outcome == 'failure'
         run: |
-          echo "⚠️ PR creation failed, committing directly to main branch"
+          echo "📦 **Google Fonts Catalog Release**" > release_notes.md
+          echo "" >> release_notes.md
+          echo "Fresh catalog generated from google/fonts repository." >> release_notes.md
+          echo "" >> release_notes.md
           
-          # Configure git
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          if [ -f automation/catalog_summary.md ]; then
+            cat automation/catalog_summary.md >> release_notes.md
+          fi
           
-          # Add and commit changes
-          git add fontdownloader/google_fonts_catalog.json
-          git commit -m "chore: update Google Fonts catalog
+          echo "" >> release_notes.md
+          echo "## Usage" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "# Download the catalog:" >> release_notes.md
+          echo "wget https://github.com/sanderboer/google-font-downloader/releases/latest/download/google_fonts_catalog.json" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "# Or use the CLI:" >> release_notes.md
+          echo "fontdownloader update-catalog --force" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
 
-          - Updated font catalog with latest families and variants  
-          - Lines added: ${{ steps.changes.outputs.lines_added }}
-          - Lines removed: ${{ steps.changes.outputs.lines_removed }}
-          - Generated: ${{ github.run_id }}
-          - Auto-committed due to PR creation failure"
-          
-          # Push to main
-          git push origin main
-          
-          echo "✅ Catalog updated via direct commit"
+      - name: Get current date
+        if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        id: date
+        run: |
+          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "compact=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.run_number }}-${{ github.run_id }}
-          name: "Google Fonts Catalog v${{ github.run_number }}"
-          body_path: automation/catalog_summary.md
+          tag_name: catalog-${{ steps.date.outputs.compact }}-${{ github.run_number }}
+          name: "Google Fonts Catalog ${{ steps.date.outputs.today }}"
+          body_path: release_notes.md
           draft: false
           prerelease: false
           make_latest: true
