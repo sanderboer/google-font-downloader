@@ -136,7 +136,7 @@ def _get_google_fonts_api_data() -> dict:
             repo=repo_name, output_path=str(catalog_temp)
         ):
             # Convert catalog format to API format for compatibility
-            with open(catalog_temp, "r", encoding="utf-8") as f:
+            with open(catalog_temp, encoding="utf-8") as f:
                 catalog_data = json.load(f)
 
             # Transform catalog to API format
@@ -173,7 +173,7 @@ def _get_google_fonts_api_data() -> dict:
     try:
         bundled_catalog = pathlib.Path(__file__).parent / "google_fonts_catalog.json"
         if bundled_catalog.exists():
-            with open(bundled_catalog, "r", encoding="utf-8") as f:
+            with open(bundled_catalog, encoding="utf-8") as f:
                 catalog_data = json.load(f)
             click.echo("✅ Using bundled catalog", err=True)
             return {"items": catalog_data.get("items", [])}
@@ -757,7 +757,7 @@ def update_catalog(repo, force):
             repo=repo, output_path=str(temp_file)
         ):
             # Validate and transform catalog
-            with open(temp_file, "r", encoding="utf-8") as f:
+            with open(temp_file, encoding="utf-8") as f:
                 catalog_data = json.load(f)
 
             families = len(catalog_data.get("items", []))
