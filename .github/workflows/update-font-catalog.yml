@@ -147,7 +147,19 @@ jobs:
           
           # Auto-merge if validation passes
           draft: false
-      
+
+      - name: Create GitHub Release
+        if: steps.changes.outputs.has_changes == 'true' || github.event.inputs.force_update == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: catalog-${{ github.run_number }}
+          name: "Google Fonts Catalog ${{ github.run_number }}"
+          body_path: automation/catalog_summary.md
+          draft: false
+          prerelease: false
+          files: |
+            fontdownloader/google_fonts_catalog.json
+
       - name: Notify on failure
         if: failure()
         run: |
