@@ -152,7 +152,7 @@ jobs:
       
       - name: Upload catalog as artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: google-fonts-catalog-${{ github.run_number }}
           path: |
