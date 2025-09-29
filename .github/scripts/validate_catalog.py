@@ -5,6 +5,7 @@ Simple catalog validation script for GitHub Actions
 import json
 import sys
 
+
 def validate_catalog():
     """Validate the generated catalog"""
     try:
