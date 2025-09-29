@@ -83,12 +83,7 @@ jobs:
             
             # Show top 10 fonts as sample
             echo "### Sample Fonts (First 10)" >> catalog_summary.md
-            python -c "
-import json
-data = json.load(open('../fontdownloader/google_fonts_catalog.json'))
-for i, item in enumerate(data['items'][:10], 1):
-    print(f'{i}. **{item[\"family\"]}** ({item[\"category\"]}) - {len(item[\"variants\"])} variants')
-" >> catalog_summary.md
+            python3 -c 'import json; data=json.load(open("../fontdownloader/google_fonts_catalog.json")); [print(f"{i}. **{item[\"family\"]}** ({item[\"category\"]}) - {len(item[\"variants\"])} variants") for i, item in enumerate(data["items"][:10], 1)]' >> catalog_summary.md
           else
             echo "❌ Catalog generation failed" >> catalog_summary.md
           fi
