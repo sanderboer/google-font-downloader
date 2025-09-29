@@ -87,7 +87,7 @@ def update_fontdownloader_cli(
     # Pattern: return { "items": [ ... ] }
     pattern = (
         r'(\\s+# Fallback list.*?\\n\\s+return\\s+{\\s*\\n\\s*"items":\\s*\\[)'
-        r'(.*?)(\\n\\s*\\]\\s*\\n\\s*})'
+        r"(.*?)(\\n\\s*\\]\\s*\\n\\s*})"
     )
 
     match = re.search(pattern, content, re.DOTALL)
@@ -146,7 +146,7 @@ def verify_integration(cli_path: Path) -> bool:
             try:
                 fallback_data = cli_module._get_google_fonts_api_data()
                 if "items" in fallback_data and len(fallback_data["items"]) > 0:
-                    family_count = len(fallback_data['items'])
+                    family_count = len(fallback_data["items"])
                     print(f"✅ Integration verified: {family_count} families loaded")
                     return True
             except Exception as e:
