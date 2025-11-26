@@ -131,7 +131,7 @@ python validate_catalog.py catalog.json --strict
 ### 3. **GitHub Actions Workflow** (`.github/workflows/update-font-catalog.yml`)
 
 **Triggers:**
-- 🕐 **Weekly Schedule**: Every Sunday at 2 AM UTC
+- 🕐 **Monthly Schedule**: First Sunday of each month at 2 AM UTC
 - 🚀 **Manual Dispatch**: On-demand with parameters
 - 🔗 **Repository Webhook**: When google/fonts updates
 
@@ -197,7 +197,7 @@ python integrate_catalog.py ../fontdownloader/google_fonts_catalog.json
 ### **Automated Operation**
 
 Once deployed, the system:
-- ✅ **Runs weekly** without intervention
+- ✅ **Runs monthly** without intervention (first Sunday of each month)
 - ✅ **Detects changes** automatically
 - ✅ **Creates PRs** with detailed summaries
 - ✅ **Validates quality** before deployment
@@ -299,9 +299,10 @@ if date_match:
 After deployment, you should see:
 - ✅ **Comprehensive Coverage**: 1,052+ Google Fonts families available offline
 - ✅ **Zero Maintenance**: Fully automated updates
-- ✅ **Regular Updates**: New fonts typically available within 7 days
+- ✅ **Regular Updates**: New fonts typically available within 30 days
 - ✅ **High Reliability**: Fallbacks handle API changes gracefully
 - ✅ **Excellent Performance**: ~200KB catalog loads instantly
+- ✅ **Complete Weight Range**: All weights 100-900 for comprehensive font coverage
 - ⚠️ **Best-Effort Parity**: Coverage aims for completeness but cannot guarantee perfect synchronization with fonts.google.com
 
 ## ⚠️ Limitations & Disclaimers

@@ -181,7 +181,7 @@ def build_complete_catalog():
 ```
 
 ### **Update Strategy**
-- **Frequency**: Weekly automated check
+- **Frequency**: Monthly automated check (first Sunday)
 - **Trigger**: Git webhook on google/fonts changes  
 - **Validation**: Compare against previous version
 - **Deployment**: Auto-PR with changes
@@ -230,6 +230,6 @@ A **complete catalog requires significant engineering effort** but is technicall
 - **Data**: 1,052 families × ~200 bytes = ~200 KB
 - **Sources**: GitHub API + CSS2 API + METADATA.pb parsing
 - **Automation**: Possible but needs proper rate limiting
-- **Maintenance**: Weekly updates recommended
+- **Maintenance**: Monthly updates recommended (to reduce API load)
 
 **For fontdownloader**: Start with **Phase 1** (100 popular fonts) for immediate 85% success rate improvement, then consider automation for complete coverage.
