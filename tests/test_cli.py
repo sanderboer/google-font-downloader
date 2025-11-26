@@ -53,14 +53,29 @@ def test_download_css2_woff_variants_dedup_and_naming(
             ]
         }
 
-    # Mock variant fetcher with duplicate (style,weight) entries
-    def fake_fetch(name: str):
-        assert name == font_name
-        return [
-            ("normal", "400", "https://example.com/a.woff2"),
-            ("normal", "400", "https://example.com/b.woff2"),
-            ("italic", "700", "https://example.com/c.woff"),
-        ]
+    # Mock requests.get to return CSS with font variants
+    class FakeResponse:
+        def __init__(self, text, status_code=200):
+            self.text = text
+            self.status_code = status_code
+
+    def fake_get(url: str, **kwargs):
+        # Return CSS with multiple formats for same variant (woff2 and woff)
+        css = """
+        @font-face {
+            font-family: 'Space Font';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://example.com/a.woff2) format('woff2');
+        }
+        @font-face {
+            font-family: 'Space Font';
+            font-style: italic;
+            font-weight: 700;
+            src: url(https://example.com/c.woff) format('woff');
+        }
+        """
+        return FakeResponse(css, 200)
 
     # Mock downloader to write empty file
     def fake_dl(url: str, dest: Path) -> bool:
@@ -68,8 +83,10 @@ def test_download_css2_woff_variants_dedup_and_naming(
         dest.write_bytes(b"")
         return True
 
+    import requests
+
     monkeypatch.setattr(cli, "_get_google_fonts_api_data", fake_get_catalog)
-    monkeypatch.setattr(cli, "_fetch_css2_variants", fake_fetch)
+    monkeypatch.setattr(requests, "get", fake_get)
     monkeypatch.setattr(cli, "_download_font_file", fake_dl)
 
     # Act
@@ -77,7 +94,7 @@ def test_download_css2_woff_variants_dedup_and_naming(
 
     # Assert
     names = sorted(p.name for _, _, p in saved)
-    # Dedup keeps one 400-normal and includes 700-italic
+    # Should include 400-normal and 700-italic
     assert names == ["SpaceFont-400-normal.woff2", "SpaceFont-700-italic.woff"]
     for _, _, p in saved:
         assert p.exists(), f"Expected file to exist: {p}"

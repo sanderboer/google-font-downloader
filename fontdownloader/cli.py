@@ -484,7 +484,6 @@ def _download_css2_woff_variants(
     # Include all available weights
     target_pairs = []
     simple_weights = []
-    has_italic = False
 
     for variant in catalog_variants:
         if variant == "regular":
@@ -492,12 +491,10 @@ def _download_css2_woff_variants(
             simple_weights.append("400")
         elif variant == "italic":
             target_pairs.append("1,400")
-            has_italic = True
         elif variant.endswith("italic"):
             weight = variant.replace("italic", "")
             if weight.isdigit():
                 target_pairs.append(f"1,{weight}")
-                has_italic = True
         elif variant.isdigit():
             target_pairs.append(f"0,{variant}")
             simple_weights.append(variant)
