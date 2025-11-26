@@ -213,7 +213,7 @@ class GoogleFontsCatalogBuilder:
                 }
 
                 # Extract family name
-                name_match = re.search(r'name:\\s*"([^"]+)"', metadata_text)
+                name_match = re.search(r'name:\s*"([^"]+)"', metadata_text)
                 if name_match:
                     metadata["name"] = name_match.group(1)
 
@@ -342,12 +342,20 @@ class GoogleFontsCatalogBuilder:
         """Extract available variants from CSS2 API"""
         self.css_limiter.wait()
 
-        # Try comprehensive weight range first
+        # Try comprehensive weight range first (all weights 100-900)
         weights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-        weight_str = ";".join(map(str, weights))
+
+        # Build properly sorted ital,wght pairs
+        pairs = []
+        for weight in weights:
+            pairs.append(f"0,{weight}")  # normal
+        for weight in weights:
+            pairs.append(f"1,{weight}")  # italic
 
         # Test with both normal and italic
-        css_url = f"https://fonts.googleapis.com/css2?family={quote_plus(family_name)}:ital,wght@0,{weight_str};1,{weight_str}&display=swap"
+        css_url = f"https://fonts.googleapis.com/css2?family={quote_plus(family_name)}:ital,wght@{';'.join(pairs)}&display=swap"
+
+        self.logger.debug(f"CSS2 URL for {family_name}: {css_url[:120]}...")
 
         headers = {
             "User-Agent": (

@@ -409,7 +409,7 @@ def _download_css2_woff_variants(
     Strategy:
     1. Get available variants from catalog data to guide downloading
     2. Try multiple CSS2 API approaches with different user agents
-    3. Request specific variants found in catalog, then fallback to comprehensive search
+    3. Request all weights 100-900 to get everything available
     4. Handle rate limiting and blocked requests gracefully
 
     Returns list of (style, weight, saved_path)
@@ -481,6 +481,7 @@ def _download_css2_woff_variants(
     font_name_variants = get_font_name_variants(font_name_to_use)
 
     # Convert catalog variants to weight/style pairs and simple weights
+    # Include all available weights
     target_pairs = []
     simple_weights = []
     has_italic = False
@@ -494,25 +495,37 @@ def _download_css2_woff_variants(
             has_italic = True
         elif variant.endswith("italic"):
             weight = variant.replace("italic", "")
-            target_pairs.append(f"1,{weight}")
-            has_italic = True
+            if weight.isdigit():
+                target_pairs.append(f"1,{weight}")
+                has_italic = True
         elif variant.isdigit():
             target_pairs.append(f"0,{variant}")
             simple_weights.append(variant)
 
-    # Add comprehensive fallback pairs
+    # Add comprehensive fallback pairs (all weights 100-900)
     all_weights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"]
     fallback_pairs = [f"0,{w}" for w in all_weights] + [f"1,{w}" for w in all_weights]
 
     # Combine catalog-guided pairs with fallback (catalog first for priority)
-    all_pairs = target_pairs + [p for p in fallback_pairs if p not in target_pairs]
+    # Use set to deduplicate, then sort to ensure proper order
+    all_pairs_set = set(target_pairs + fallback_pairs)
+    # Sort by italic (0/1) then by weight
+    all_pairs = sorted(
+        all_pairs_set, key=lambda x: (int(x.split(",")[0]), int(x.split(",")[1]))
+    )
 
-    # Multiple user agents to avoid blocking
+    # Multiple user agents to get both woff and woff2 formats
+    # Modern browsers get woff2, very old browsers get woff
     user_agents = [
+        # Modern Chrome - gets woff2
         USER_AGENT,
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        # Very old browsers - gets woff (before woff2 support)
+        # Chrome 35 and earlier, Firefox 38 and earlier
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:38.0) Gecko/20100101 Firefox/38.0",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0",
     ]
 
     def parse_css(css_text: str) -> list[tuple[str, str, str]]:
@@ -522,42 +535,24 @@ def _download_css2_woff_variants(
         )
         return pattern.findall(css_text)
 
-    chosen: dict[tuple[str, str], str] = {}
+    # Store URLs by (style, weight) - we'll collect multiple formats per variant
+    chosen: dict[tuple[str, str], list[str]] = {}
 
     # Try CSS2 API with different strategies and font name variants
     strategies = []
 
     # Generate strategies for each font name variant
+    # Always use comprehensive strategy to get ALL weights 400-900
     for name_variant in font_name_variants:
-        # Strategy 1: Simple weight format if no italics
-        if simple_weights and not has_italic:
-            simple_url = (
-                f"https://fonts.googleapis.com/css2?family="
-                f"{urllib.parse.quote_plus(name_variant)}:wght@{';'.join(simple_weights)}&display=swap"
-            )
-            strategies.append((simple_url, f"simple-weights-{name_variant}"))
-
-        # Strategy 2: Catalog-guided ital,wght format
-        if target_pairs:
-            ital_wght_url = (
-                f"https://fonts.googleapis.com/css2?family="
-                f"{urllib.parse.quote_plus(name_variant)}:ital,wght@{';'.join(target_pairs)}&display=swap"
-            )
-            strategies.append((ital_wght_url, f"catalog-guided-{name_variant}"))
-
-    # Strategy 3: Comprehensive weight range (only for first variant to avoid too many requests)
-    if font_name_variants:
+        # Use comprehensive weight range (all weights 400-900, both normal and italic)
         comprehensive_url = (
             f"https://fonts.googleapis.com/css2?family="
-            f"{urllib.parse.quote_plus(font_name_variants[0])}:ital,wght@{';'.join(all_pairs)}&display=swap"
+            f"{urllib.parse.quote_plus(name_variant)}:ital,wght@{';'.join(all_pairs)}&display=swap"
         )
-        strategies.append((comprehensive_url, "comprehensive"))
+        strategies.append((comprehensive_url, f"comprehensive-{name_variant}"))
 
     for css_url, strategy_name in strategies:
-        if chosen and strategy_name == "comprehensive":
-            break  # Skip comprehensive if previous strategies worked
-
-        # Try multiple user agents
+        # Try multiple user agents to get different formats (woff and woff2)
         for ua_index, user_agent in enumerate(user_agents):
             headers = {
                 "User-Agent": user_agent,
@@ -569,15 +564,18 @@ def _download_css2_woff_variants(
                     variants_found = 0
                     for style, weight, url in parse_css(r.text):
                         key = (style, weight)
+                        # Add URL to list if not already present
                         if key not in chosen:
-                            chosen[key] = url
+                            chosen[key] = []
+                        if url not in chosen[key]:
+                            chosen[key].append(url)
                             variants_found += 1
 
                     if variants_found > 0:
                         click.echo(
                             f"✅ Found {variants_found} variants using {strategy_name} strategy (UA {ua_index + 1})"
                         )
-                        break  # Success with this user agent
+                        # Don't break - try other user agents to get more formats
 
                 elif r.status_code == 403:
                     click.echo(
@@ -594,14 +592,13 @@ def _download_css2_woff_variants(
                 click.echo(f"⚠️  Error with UA {ua_index + 1}: {str(e)[:50]}...")
                 continue
 
-        if chosen:
-            break  # Success with this strategy
+        # Don't break after first strategy - try all strategies to collect more formats
 
     # Fallback: CSS1 API (often works when CSS2 is blocked)
     if not chosen:
         click.echo("🔄 Trying CSS1 API fallback...")
         try:
-            # Build CSS1 weights string from catalog variants
+            # Build CSS1 weights string from catalog variants (all weights)
             css1_weights = []
             for variant in catalog_variants:
                 if variant == "regular":
@@ -610,7 +607,8 @@ def _download_css2_woff_variants(
                     css1_weights.append("400italic")
                 elif variant.endswith("italic"):
                     weight = variant.replace("italic", "")
-                    css1_weights.append(f"{weight}italic")
+                    if weight.isdigit():
+                        css1_weights.append(f"{weight}italic")
                 elif variant.isdigit():
                     css1_weights.append(variant)
 
@@ -621,86 +619,38 @@ def _download_css2_woff_variants(
             for name_variant in font_name_variants:
                 css1_url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote_plus(name_variant)}:{','.join(css1_weights)}"
 
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-                }
+                # Try with multiple user agents for CSS1 too to get both formats
+                for user_agent in user_agents:
+                    headers = {
+                        "User-Agent": user_agent,
+                    }
 
-                r = requests.get(css1_url, headers=headers, timeout=30)
-                if r.status_code == 200:
-                    # Parse CSS1 format
-                    pattern = re.compile(
-                        r"font-style:\s*(normal|italic).*?font-weight:\s*(\d+).*?src:[^;]*?url\(([^)]+)\)",
-                        re.IGNORECASE | re.DOTALL,
-                    )
-                    variants_found = 0
-                    for style, weight, url in pattern.findall(r.text):
-                        key = (style, weight)
-                        if key not in chosen:
-                            chosen[key] = url
-                            variants_found += 1
-
-                    if variants_found > 0:
-                        click.echo(
-                            f"✅ Found {variants_found} variants using CSS1 API with {name_variant}"
+                    r = requests.get(css1_url, headers=headers, timeout=30)
+                    if r.status_code == 200:
+                        # Parse CSS1 format
+                        pattern = re.compile(
+                            r"font-style:\s*(normal|italic).*?font-weight:\s*(\d+).*?src:[^;]*?url\(([^)]+)\)",
+                            re.IGNORECASE | re.DOTALL,
                         )
-                        break  # Success, stop trying variants
+                        variants_found = 0
+                        for style, weight, url in pattern.findall(r.text):
+                            key = (style, weight)
+                            if key not in chosen:
+                                chosen[key] = []
+                            if url not in chosen[key]:
+                                chosen[key].append(url)
+                                variants_found += 1
+
+                        if variants_found > 0:
+                            click.echo(
+                                f"✅ Found {variants_found} variants using CSS1 API with {name_variant}"
+                            )
+                            # Continue trying other user agents for more formats
+
+                if chosen:
+                    break  # Success, stop trying variants
         except Exception as e:
             click.echo(f"⚠️  CSS1 fallback failed: {str(e)[:50]}...")
-
-    # Enhanced CSS1 fallback with delays and Safari user agent
-    if not chosen:
-        click.echo("🔄 Trying enhanced CSS1 fallback with delays...")
-        try:
-            # Use weights from catalog
-            weights_to_try = simple_weights if simple_weights else ["400", "700"]
-
-            # Try each font name variant for enhanced CSS1
-            for name_variant in font_name_variants:
-                css1_url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote_plus(name_variant)}:{','.join(weights_to_try)}"
-
-                # Try with Safari user agent (less likely to be blocked)
-                time.sleep(2)  # Add delay to avoid rate limiting
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
-                }
-
-                r = requests.get(css1_url, headers=headers, timeout=30)
-                if r.status_code == 200 and "@font-face" in r.text:
-                    # Parse CSS1 format
-                    pattern = re.compile(
-                        r"font-style:\s*(normal|italic).*?font-weight:\s*(\d+).*?src:[^;]*?url\(([^)]+)\)",
-                        re.IGNORECASE | re.DOTALL,
-                    )
-                    variants_found = 0
-                    for style, weight, url in pattern.findall(r.text):
-                        key = (style, weight)
-                        if key not in chosen:
-                            chosen[key] = url
-                            variants_found += 1
-
-                    if variants_found > 0:
-                        click.echo(
-                            f"✅ Found {variants_found} variants using enhanced CSS1 fallback with {name_variant}"
-                        )
-                        break  # Success, stop trying variants
-                else:
-                    click.echo(
-                        f"⚠️  Enhanced CSS1 returned {r.status_code} for {name_variant}"
-                    )
-
-        except Exception as e:
-            click.echo(f"⚠️  Enhanced CSS1 fallback failed: {str(e)[:50]}...")
-
-    # Final fallback: original CSS2 method
-    if not chosen:
-        click.echo("🔄 Trying original CSS2 fallback method...")
-        try:
-            for style, weight, url in _fetch_css2_variants(font_name):
-                key = (style, weight)
-                if key not in chosen:
-                    chosen[key] = url
-        except Exception:
-            pass
 
     if not chosen:
         click.echo(
@@ -708,22 +658,34 @@ def _download_css2_woff_variants(
         )
         return []
 
-    # Download the font files
+    # Download the font files (all formats collected)
     saved: list[tuple[str, str, pathlib.Path]] = []
-    click.echo(f"📥 Downloading {len(chosen)} WOFF variants...")
 
-    for (style, weight), url in chosen.items():
-        ext = (
-            "woff2"
-            if url.endswith(".woff2")
-            else ("woff" if url.endswith(".woff") else "woff2")
-        )
-        filename = f"{font_name.replace(' ', '')}-{weight}-{style}.{ext}"
-        target = dest_dir / filename
-        if _download_font_file(url, target):
-            saved.append((style, weight, target))
-        else:
-            click.echo(f"⚠️  Failed to download {filename}")
+    # Count total URLs to download
+    total_urls = sum(len(urls) for urls in chosen.values())
+    click.echo(
+        f"📥 Downloading {len(chosen)} variants ({total_urls} files including all formats)..."
+    )
+
+    for (style, weight), urls in chosen.items():
+        for url in urls:
+            ext = (
+                "woff2"
+                if url.endswith(".woff2")
+                else ("woff" if url.endswith(".woff") else "woff2")
+            )
+            filename = f"{font_name.replace(' ', '')}-{weight}-{style}.{ext}"
+            target = dest_dir / filename
+
+            # Skip if already downloaded
+            if target.exists():
+                saved.append((style, weight, target))
+                continue
+
+            if _download_font_file(url, target):
+                saved.append((style, weight, target))
+            else:
+                click.echo(f"⚠️  Failed to download {filename}")
 
     return saved
 
@@ -746,21 +708,47 @@ def _generate_scss(
     )
     ttf_fallback = ttf_files[0].name if ttf_files else None
 
-    lines = [f"// Font: {font_name}"]
+    # Group variants by (style, weight) to combine woff and woff2
+    variant_files: dict[tuple[str, str], list[pathlib.Path]] = {}
     for style, weight, path in woff_variants:
-        rel_woff = f"../fonts/{font_name}/{path.name}"
+        key = (style, weight)
+        if key not in variant_files:
+            variant_files[key] = []
+        variant_files[key].append(path)
+
+    lines = [f"// Font: {font_name}"]
+
+    for (style, weight), paths in sorted(variant_files.items()):
         lines.append("@font-face {")
         lines.append(f"  font-family: '{font_name}';")
         lines.append(f"  font-style: {style};")
         lines.append(f"  font-weight: {weight};")
+
+        # Build src with all available formats (woff2, woff, ttf)
+        src_parts = []
+
+        # Add woff2 first (most modern)
+        for path in paths:
+            if path.name.endswith(".woff2"):
+                rel_woff2 = f"../fonts/{font_name}/{path.name}"
+                src_parts.append(f"url('{rel_woff2}') format('woff2')")
+                break  # Only add one woff2
+
+        # Add woff next
+        for path in paths:
+            if path.name.endswith(".woff"):
+                rel_woff = f"../fonts/{font_name}/{path.name}"
+                src_parts.append(f"url('{rel_woff}') format('woff')")
+                break  # Only add one woff
+
+        # Add ttf as fallback
         if ttf_fallback:
             rel_ttf = f"../fonts/{font_name}/{ttf_fallback}"
-            lines.append(
-                f"  src: url('{rel_woff}') format('woff2'), "
-                f"url('{rel_ttf}') format('truetype');"
-            )
-        else:
-            lines.append(f"  src: url('{rel_woff}') format('woff2');")
+            src_parts.append(f"url('{rel_ttf}') format('truetype')")
+
+        if src_parts:
+            lines.append(f"  src: {', '.join(src_parts)};")
+
         lines.append("}")
         lines.append("")
 
