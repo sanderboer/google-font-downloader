@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fontdownloader"
-version = "0.2.1"
+version = "0.3.0"
 description = "CLI to download Google Fonts (TTF/OTF/TTC + WOFF), OFL license, and SCSS"
 readme = "README.md"
 authors = [{ name = "Mauc" }]

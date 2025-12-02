@@ -93,8 +93,8 @@ def test_download_css2_woff_variants_dedup_and_naming(
     saved = cli._download_css2_woff_variants(font_name, dest_dir)
 
     # Assert
-    names = sorted(p.name for _, _, p in saved)
+    names = sorted(p.name for _, _, p, _ in saved)
     # Should include 400-normal and 700-italic
     assert names == ["SpaceFont-400-normal.woff2", "SpaceFont-700-italic.woff"]
-    for _, _, p in saved:
+    for _, _, p, _ in saved:
         assert p.exists(), f"Expected file to exist: {p}"

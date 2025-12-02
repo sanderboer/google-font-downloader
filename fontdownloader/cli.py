@@ -17,6 +17,69 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
 )
 
+# Check if fontTools with woff2 support is available
+try:
+    from fontTools.ttLib import TTFont
+
+    FONTTOOLS_AVAILABLE = True
+except ImportError:
+    FONTTOOLS_AVAILABLE = False
+    TTFont = None  # type: ignore
+
+
+def _convert_ttf_to_woff(
+    ttf_path: pathlib.Path, output_formats: list[str] | None = None
+) -> list[pathlib.Path]:
+    """Convert TTF/OTF to WOFF and/or WOFF2 formats.
+
+    Args:
+        ttf_path: Path to the TTF/OTF file
+        output_formats: List of formats to generate (default: ["woff2", "woff"])
+
+    Returns:
+        List of paths to generated files
+
+    Raises:
+        ImportError: If fontTools is not installed
+    """
+    if not FONTTOOLS_AVAILABLE:
+        raise ImportError(
+            "fontTools is required for TTF conversion. "
+            "Install with: pip install fonttools[woff,woff2] brotli"
+        )
+
+    if output_formats is None:
+        output_formats = ["woff2", "woff"]
+
+    generated = []
+
+    for fmt in output_formats:
+        if fmt not in ("woff", "woff2"):
+            click.echo(f"⚠️  Unsupported format: {fmt}", err=True)
+            continue
+
+        try:
+            font = TTFont(str(ttf_path))  # type: ignore
+            output_path = ttf_path.with_suffix(f".{fmt}")
+
+            font.flavor = fmt
+            font.save(str(output_path))
+            generated.append(output_path)
+
+            # Calculate compression ratio
+            original_size = ttf_path.stat().st_size
+            new_size = output_path.stat().st_size
+            ratio = (1 - new_size / original_size) * 100
+
+            click.echo(
+                f"  ✅ Generated {output_path.name} "
+                f"({new_size // 1024}KB, {ratio:.1f}% compression)"
+            )
+        except Exception as e:
+            click.echo(f"  ❌ Failed to convert to {fmt}: {e}", err=True)
+
+    return generated
+
 
 def _slugify_google_fonts_dir(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
@@ -401,9 +464,46 @@ def _fetch_css2_variants(font_name: str) -> list[tuple[str, str, str]]:
         return []
 
 
+def _is_variable_font_response(
+    chosen: dict[tuple[str, str], list[str]],
+) -> dict[str, bool]:
+    """Detect if URLs represent variable fonts by checking for duplicate URLs across weights.
+
+    For variable fonts, Google returns the SAME URLs for different weights (within each subset).
+    Example: Inter weight 400 latin and weight 700 latin use the same woff2 file.
+
+    Returns dict with keys 'normal' and 'italic' indicating if each style is variable.
+    """
+
+    # For each style, check if URLs are reused across weights
+    def is_style_variable(style: str) -> bool:
+        weights_for_style = [(w, urls) for (s, w), urls in chosen.items() if s == style]
+
+        if len(weights_for_style) < 3:
+            return False  # Need at least 3 weights to determine
+
+        # Check if there are duplicate URLs across different weights
+        # For variable fonts, each subset URL appears for ALL weights
+        url_to_weights = {}
+        for weight, urls in weights_for_style:
+            for url in urls:
+                if url not in url_to_weights:
+                    url_to_weights[url] = []
+                url_to_weights[url].append(weight)
+
+        # If any URL appears for 3+ weights, it's likely a variable font
+        max_weight_count = max(len(weights) for weights in url_to_weights.values())
+        return max_weight_count >= 3
+
+    return {
+        "normal": is_style_variable("normal"),
+        "italic": is_style_variable("italic"),
+    }
+
+
 def _download_css2_woff_variants(
     font_name: str, dest_dir: pathlib.Path
-) -> list[tuple[str, str, pathlib.Path]]:
+) -> list[tuple[str, str, pathlib.Path, bool]]:
     """Download WOFF/WOFF2 variants using the CSS2 API with catalog integration.
 
     Strategy:
@@ -411,8 +511,9 @@ def _download_css2_woff_variants(
     2. Try multiple CSS2 API approaches with different user agents
     3. Request all weights 100-900 to get everything available
     4. Handle rate limiting and blocked requests gracefully
+    5. Detect variable fonts and download them only once per style
 
-    Returns list of (style, weight, saved_path)
+    Returns list of (style, weight, saved_path, is_variable_font)
     """
     # Get catalog data to determine available variants
     fonts_data = _get_google_fonts_api_data()
@@ -655,34 +756,102 @@ def _download_css2_woff_variants(
         )
         return []
 
+    # Detect if this is a variable font (same URLs for multiple weights)
+    variable_font_status = _is_variable_font_response(chosen)
+    is_variable = variable_font_status["normal"] or variable_font_status["italic"]
+
+    if is_variable:
+        click.echo("🔍 Variable font detected - optimizing download strategy")
+
     # Download the font files (all formats collected)
-    saved: list[tuple[str, str, pathlib.Path]] = []
+    saved: list[tuple[str, str, pathlib.Path, bool]] = []
 
-    # Count total URLs to download
-    total_urls = sum(len(urls) for urls in chosen.values())
-    click.echo(
-        f"📥 Downloading {len(chosen)} variants ({total_urls} files including all formats)..."
-    )
+    if is_variable:
+        # For variable fonts: download once per style, not per weight
+        # Group by style only
+        styles_to_download = {}
+        for (style, _weight), urls in chosen.items():
+            if style not in styles_to_download:
+                # Find weight range for this style
+                weights = sorted(
+                    int(key_weight)
+                    for (key_style, key_weight) in chosen.keys()
+                    if key_style == style
+                )
+                min_weight = str(weights[0]) if weights else "400"
+                max_weight = str(weights[-1]) if weights else "400"
+                styles_to_download[style] = {
+                    "urls": urls,
+                    "min_weight": min_weight,
+                    "max_weight": max_weight,
+                }
 
-    for (style, weight), urls in chosen.items():
-        for url in urls:
-            ext = (
-                "woff2"
-                if url.endswith(".woff2")
-                else ("woff" if url.endswith(".woff") else "woff2")
-            )
-            filename = f"{font_name.replace(' ', '')}-{weight}-{style}.{ext}"
-            target = dest_dir / filename
+        click.echo(f"📥 Downloading {len(styles_to_download)} variable font files...")
 
-            # Skip if already downloaded
-            if target.exists():
-                saved.append((style, weight, target))
-                continue
+        for style, info in styles_to_download.items():
+            for url in info["urls"]:
+                ext = (
+                    "woff2"
+                    if url.endswith(".woff2")
+                    else ("woff" if url.endswith(".woff") else "woff2")
+                )
+                # Use style-based naming for variable fonts
+                filename = f"{font_name.replace(' ', '')}-{style}.{ext}"
+                target = dest_dir / filename
 
-            if _download_font_file(url, target):
-                saved.append((style, weight, target))
-            else:
-                click.echo(f"⚠️  Failed to download {filename}")
+                # Skip if already downloaded
+                if target.exists():
+                    # Add with weight range info
+                    saved.append(
+                        (
+                            style,
+                            f"{info['min_weight']}-{info['max_weight']}",
+                            target,
+                            True,
+                        )
+                    )
+                    continue
+
+                if _download_font_file(url, target):
+                    saved.append(
+                        (
+                            style,
+                            f"{info['min_weight']}-{info['max_weight']}",
+                            target,
+                            True,
+                        )
+                    )
+                    click.echo(
+                        f"  ✅ {filename} (weights {info['min_weight']}-{info['max_weight']})"
+                    )
+                else:
+                    click.echo(f"  ⚠️  Failed to download {filename}")
+    else:
+        # For static fonts: download each weight separately
+        total_urls = sum(len(urls) for urls in chosen.values())
+        click.echo(
+            f"📥 Downloading {len(chosen)} variants ({total_urls} files including all formats)..."
+        )
+
+        for (style, weight), urls in chosen.items():
+            for url in urls:
+                ext = (
+                    "woff2"
+                    if url.endswith(".woff2")
+                    else ("woff" if url.endswith(".woff") else "woff2")
+                )
+                filename = f"{font_name.replace(' ', '')}-{weight}-{style}.{ext}"
+                target = dest_dir / filename
+
+                # Skip if already downloaded
+                if target.exists():
+                    saved.append((style, weight, target, False))
+                    continue
+
+                if _download_font_file(url, target):
+                    saved.append((style, weight, target, False))
+                else:
+                    click.echo(f"⚠️  Failed to download {filename}")
 
     return saved
 
@@ -690,9 +859,13 @@ def _download_css2_woff_variants(
 def _generate_scss(
     font_name: str,
     font_dir: pathlib.Path,
-    woff_variants: list[tuple[str, str, pathlib.Path]],
+    woff_variants: list[tuple[str, str, pathlib.Path, bool]]
+    | list[tuple[str, str, pathlib.Path]],
 ):
-    """Generate a basic SCSS file with @font-face rules for variants."""
+    """Generate a basic SCSS file with @font-face rules for variants.
+
+    Supports both static and variable fonts. For variable fonts, uses weight ranges.
+    """
     scss_dir = pathlib.Path("assets/scss")
     scss_dir.mkdir(parents=True, exist_ok=True)
     scss_file = scss_dir / f"{font_name.replace(' ', '_')}.scss"
@@ -706,20 +879,34 @@ def _generate_scss(
     ttf_fallback = ttf_files[0].name if ttf_files else None
 
     # Group variants by (style, weight) to combine woff and woff2
-    variant_files: dict[tuple[str, str], list[pathlib.Path]] = {}
-    for style, weight, path in woff_variants:
+    # variant_info stores: paths, is_variable
+    variant_files: dict[tuple[str, str], dict] = {}
+    for variant in woff_variants:
+        if len(variant) == 4:
+            style, weight, path, is_variable = variant
+        else:
+            style, weight, path = variant
+            is_variable = False
         key = (style, weight)
         if key not in variant_files:
-            variant_files[key] = []
-        variant_files[key].append(path)
+            variant_files[key] = {"paths": [], "is_variable": is_variable}
+        variant_files[key]["paths"].append(path)
 
     lines = [f"// Font: {font_name}"]
 
-    for (style, weight), paths in sorted(variant_files.items()):
+    for (style, weight), info in sorted(variant_files.items()):
+        paths = info["paths"]
+        is_variable = info["is_variable"]
+
         lines.append("@font-face {")
         lines.append(f"  font-family: '{font_name}';")
         lines.append(f"  font-style: {style};")
-        lines.append(f"  font-weight: {weight};")
+
+        # For variable fonts, weight might be a range like "100-900"
+        if is_variable and "-" in weight:
+            lines.append(f"  font-weight: {weight.replace('-', ' ')};")
+        else:
+            lines.append(f"  font-weight: {weight};")
 
         # Build src with all available formats (woff2, woff, ttf)
         src_parts = []
@@ -762,7 +949,9 @@ def _generate_scss(
     scss_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def _download_full_family(font_name: str, force: bool) -> None:
+def _download_full_family(
+    font_name: str, force: bool, convert_ttf: bool = False
+) -> None:
     assets_fonts = pathlib.Path("assets/fonts")
     font_dir = assets_fonts / font_name
 
@@ -829,6 +1018,77 @@ def _download_full_family(font_name: str, force: bool) -> None:
     else:
         click.echo("⚠️  No WOFF variants fetched")
 
+    # Optional: Convert TTF to WOFF/WOFF2
+    if convert_ttf:
+        if not FONTTOOLS_AVAILABLE:
+            click.echo(
+                "⚠️  TTF conversion requires fontTools. "
+                "Install with: pip install fonttools[woff,woff2] brotli",
+                err=True,
+            )
+        else:
+            click.echo("🔄 Converting TTF files to WOFF/WOFF2...")
+            ttf_files = list(font_dir.glob("*.ttf")) + list(font_dir.glob("*.otf"))
+
+            if not ttf_files:
+                click.echo("  ⚠️  No TTF/OTF files found to convert")
+            else:
+                converted_count = 0
+                for ttf_file in ttf_files:
+                    try:
+                        generated = _convert_ttf_to_woff(ttf_file)
+                        converted_count += len(generated)
+
+                        # Add converted files to woff_variants for SCSS generation
+                        # Detect if it's a variable font
+                        try:
+                            font = TTFont(str(ttf_file))  # type: ignore
+                            is_variable = "fvar" in font
+
+                            if is_variable:
+                                fvar_table = font["fvar"]  # type: ignore
+                                axes = fvar_table.axes  # type: ignore
+                                weight_axis = next(
+                                    (a for a in axes if a.axisTag == "wght"), None
+                                )
+                                if weight_axis:
+                                    min_w = int(weight_axis.minValue)
+                                    max_w = int(weight_axis.maxValue)
+                                    weight = f"{min_w}-{max_w}"
+                                else:
+                                    weight = "400"
+                            else:
+                                weight = "400"
+
+                            # Determine style from filename
+                            style = (
+                                "italic"
+                                if "italic" in ttf_file.name.lower()
+                                else "normal"
+                            )
+
+                            for gen_file in generated:
+                                woff_variants.append(
+                                    (style, weight, gen_file, is_variable)
+                                )
+                        except Exception:
+                            # Fallback if font inspection fails
+                            style = (
+                                "italic"
+                                if "italic" in ttf_file.name.lower()
+                                else "normal"
+                            )
+                            for gen_file in generated:
+                                woff_variants.append((style, "400", gen_file, False))
+
+                    except Exception as e:
+                        click.echo(
+                            f"  ❌ Failed to convert {ttf_file.name}: {e}", err=True
+                        )
+
+                if converted_count > 0:
+                    click.echo(f"✅ Converted {converted_count} files from TTF/OTF")
+
     # Ensure license exists
     license_path = font_dir / "OFL.txt"
     if not license_path.exists():
@@ -890,10 +1150,19 @@ def search(query, limit, details):
 )
 @click.option("--output", default="fonts", help="Output directory: fonts or web")
 @click.option("--force", is_flag=True, help="Reinstall even if font already exists")
-def download(font_names, names_file, output, force):
+@click.option(
+    "--convert-ttf",
+    is_flag=True,
+    help="Convert downloaded TTF/OTF files to WOFF/WOFF2 (requires fonttools)",
+)
+def download(font_names, names_file, output, force, convert_ttf):
     """Download and install Google Webfonts to assets/fonts/.
 
     Accepts multiple FONT_NAMES or --file to read names (one per line).
+
+    The --convert-ttf option converts TTF/OTF files to web formats (WOFF/WOFF2).
+    This provides full unicode coverage but larger file sizes than Google's subsets.
+    Requires: pip install fonttools[woff,woff2] brotli
     """
     names: list[str] = []
     if font_names:
@@ -927,7 +1196,7 @@ def download(font_names, names_file, output, force):
 
     for n in unique_names:
         click.echo(f"\n🔤 Processing '{n}'...")
-        _download_full_family(n, force)
+        _download_full_family(n, force, convert_ttf)
     return
 
 
@@ -1058,7 +1327,12 @@ def update_catalog(repo, force):
     "--limit", default=100, help="Maximum number of fonts to download (default: 100)"
 )
 @click.option("--force", is_flag=True, help="Reinstall even if fonts already exist")
-def download_all(limit, force):
+@click.option(
+    "--convert-ttf",
+    is_flag=True,
+    help="Convert downloaded TTF/OTF files to WOFF/WOFF2 (requires fonttools)",
+)
+def download_all(limit, force, convert_ttf):
     """Download a large set of popular Google Webfonts using the consolidated flow."""
     click.echo(f"📥 Downloading top {limit} Google Fonts...")
 
@@ -1071,7 +1345,7 @@ def download_all(limit, force):
     for font in fonts_to_download:
         font_name = font["family"]
         click.echo(f"\n🔤 Processing '{font_name}'...")
-        _download_full_family(font_name, force)
+        _download_full_family(font_name, force, convert_ttf)
 
         # Consider success if directory contains any font files
         font_dir = pathlib.Path("assets/fonts") / font_name
